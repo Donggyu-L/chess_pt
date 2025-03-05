@@ -42,15 +42,16 @@ class WandBLogger(object):
     @staticmethod
     def get_default_config(updates=None):
         config = ConfigDict()
-        config.online = False
+        config.online = True
         config.prefix = ''
-        config.project = 'PrefRL'
+        config.project = 'Chess_pt'
         config.output_dir = './reward_model'
         config.random_delay = 0.0
         config.group = config_dict.placeholder(str)
         config.experiment_id = config_dict.placeholder(str)
         config.anonymous = config_dict.placeholder(str)
         config.notes = config_dict.placeholder(str)
+        config.entity = 'hails'
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
@@ -86,6 +87,7 @@ class WandBLogger(object):
             dir=self.config.output_dir,
             group=self.config.group,
             name=self.config.experiment_id,
+            entity='hails',
             # anonymous=self.config.anonymous,
             notes=self.config.notes,
             settings=wandb.Settings(

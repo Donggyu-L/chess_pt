@@ -213,7 +213,7 @@ def get(dictionary, key):
 
 def get_attention_mask(attn_mask, batch_size):
     assert batch_size > 0, 'batch_size should be > 0.'
-    attn_mask = jnp.reshape(attn_mask, newshape=(batch_size, -1))
+    attn_mask = jnp.reshape(attn_mask, shape=(batch_size, -1))
     attn_mask = jnp.expand_dims(attn_mask, axis=(1, 2))
     attn_mask = (1.0 - attn_mask) * -10000.0
     return attn_mask

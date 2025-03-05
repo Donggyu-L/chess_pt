@@ -15,34 +15,35 @@ from flax.training.early_stopping import EarlyStopping
 from flaxmodels.flaxmodels.lstm.lstm import LSTMRewardModel
 from flaxmodels.flaxmodels.gpt2.trajectory_gpt2 import TransRewardModel
 
+
 import robosuite as suite
 from robosuite.wrappers import GymWrapper
 import robomimic.utils.env_utils as EnvUtils
 
-from .sampler import TrajSampler
-from .jax_utils import batch_to_jax
+from JaxPref.sampler import TrajSampler
+from JaxPref.jax_utils import batch_to_jax
 import JaxPref.reward_transform as r_tf
-from .model import FullyConnectedQFunction
+from JaxPref.model import FullyConnectedQFunction
 from viskit.logging import logger, setup_logger
-from .MR import MR
-from .replay_buffer import get_d4rl_dataset, index_batch
-from .NMR import NMR
-from .PrefTransformer import PrefTransformer
-from .utils import Timer, define_flags_with_default, set_random_seed, get_user_flags, prefix_metrics, WandBLogger, save_pickle
+from JaxPref.MR import MR
+from JaxPref.replay_buffer import get_d4rl_dataset, index_batch
+from JaxPref.NMR import NMR
+from JaxPref.PrefTransformer import PrefTransformer
+from JaxPref.utils import Timer, define_flags_with_default, set_random_seed, get_user_flags, prefix_metrics, WandBLogger, save_pickle
 
 # Jax memory
 # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE']='false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.50'
 
 FLAGS_DEF = define_flags_with_default(
-    env='halfcheetah-medium-v2',
-    model_type='MLP',
+    env='antmaze-medium-play-v2',
+    model_type='PrefTransformer',
     max_traj_length=1000,
     seed=42,
     data_seed=42,
     save_model=True,
     batch_size=64,
-    early_stop=False,
+    early_stop=True,
     min_delta=1e-3,
     patience=10,
 
@@ -59,19 +60,19 @@ FLAGS_DEF = define_flags_with_default(
     n_epochs=2000,
     eval_period=5,
 
-    data_dir='./human_label',
+    data_dir='/home/hail/PreferenceTransformer/human_label',
     num_query=1000,
     query_len=25,
     skip_flag=0,
     balance=False,
     topk=10,
     window=2,
-    use_human_label=False,
+    use_human_label=True,
     feedback_random=False,
     feedback_uniform=False,
     enable_bootstrap=False,
 
-    comment='',
+    comment='teeee',
 
     robosuite=False,
     robosuite_dataset_type="ph",
@@ -273,7 +274,8 @@ def main(_):
                     # choose eval loss as criteria.
                     criteria_key = key
             criteria = np.mean(metrics[criteria_key])
-            has_improved, early_stop = early_stop.update(criteria)
+            early_stop = early_stop.update(criteria)
+            has_improved = early_stop.has_improved
             if early_stop.should_stop and FLAGS.early_stop:
                 for key, val in metrics.items():
                     if isinstance(val, list):

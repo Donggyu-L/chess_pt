@@ -1,3 +1,4 @@
+import os
 from functools import partial
 
 from ml_collections import ConfigDict
@@ -11,6 +12,7 @@ from flax.training.train_state import TrainState
 
 from .jax_utils import next_rng, value_and_multi_grad, mse_loss, cross_ent_loss, kld_loss
 
+os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "platform"
 
 class PrefTransformer(object):
 
@@ -21,19 +23,19 @@ class PrefTransformer(object):
         config.optimizer_type = 'adamw'
         config.scheduler_type = 'CosineDecay'
         config.vocab_size = 1
-        config.n_layer = 3
-        config.embd_dim = 256
+        config.n_layer = 4
+        config.embd_dim = 128
         config.n_embd = config.embd_dim
-        config.n_head = 1
+        config.n_head = 4
         config.n_positions = 1024
         config.resid_pdrop = 0.1
         config.attn_pdrop = 0.1
-        config.pref_attn_embd_dim = 256
+        config.pref_attn_embd_dim = 128
 
         config.train_type = "mean"
 
         # Weighted Sum option
-        config.use_weighted_sum = False
+        config.use_weighted_sum = True
 
         if updates is not None:
             config.update(ConfigDict(updates).copy_and_resolve_references())
@@ -167,9 +169,13 @@ class PrefTransformer(object):
             trans_loss = cross_ent_loss(logits, label_target)
             cse_loss = trans_loss
             loss_collection['trans'] = trans_loss
+
             return tuple(loss_collection[key] for key in self.model_keys), locals()
+            #return tuple(loss_collection[key] for key in self.model_keys), locals(), logits
 
         train_params = {key: train_states[key].params for key in self.model_keys}
+        #loss, local, _ = loss_fn(train_params, rng)
+        #_, _, logit = loss_fn(train_params, rng)
         (_, aux_values), _ = value_and_multi_grad(loss_fn, len(self.model_keys), has_aux=True)(train_params, rng)
 
         metrics = dict(
@@ -177,8 +183,9 @@ class PrefTransformer(object):
             eval_trans_loss=aux_values['trans_loss'],
         )
 
+        #return logit
         return metrics
-      
+
     def train(self, batch):
         self._total_steps += 1
         self._train_states, metrics = self._train_pref_step(

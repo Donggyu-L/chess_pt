@@ -244,7 +244,7 @@ class GPT2Model(nn.Module):
         
         if position_ids is None:
             position_ids = jnp.arange(start=past_length, stop=input_shape[-1] + past_length)
-            position_ids = jnp.reshape(jnp.expand_dims(position_ids, axis=0), newshape=(-1, input_shape[-1])) 
+            position_ids = jnp.reshape(jnp.expand_dims(position_ids, axis=0), shape=(-1, input_shape[-1]))
 
         if input_embds is None:
             input_embds = nn.Embed(num_embeddings=self.vocab_size, features=self.embd_dim)(input_ids)
